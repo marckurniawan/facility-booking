@@ -86,9 +86,54 @@ describe('POST /register', () => {
         expect(result.rows[0].email).toBe(expectedEmail);
     });
 
-    test.todo('rejects an email that differs only by letter case with 409');
+    test('rejects an email that differs only by letter case with 409', async () => {
+        const response1 = await request(app)
+            .post('/register')
+            .send({
+                username: 'marcell_test',
+                email:'marcell_test@test.com',
+                password: 'StrongPassword123!'
+            });
+        expect(response1.status).toBe(201);
 
-    test.todo('rejects a username that differs only by letter case with 409');
+        const response2 = await request(app)
+            .post('/register')
+            .send({
+                username: 'marcell2_test',
+                email:'marcelL_Test@test.com',
+                password: 'StrongPassword123!'
+            });
+        expect(response2.status).toBe(409);
+        expect(response2.body).toEqual({
+            message: 'email already in use'
+        });
+            
+        
+    });
+
+    test('rejects a username that differs only by letter case with 409', async () => {
+        const response1 = await request(app)
+            .post('/register')
+            .send({
+                username: 'marcell_test',
+                email:'marcell_test@test.com',
+                password: 'StrongPassword123!'
+            });
+        expect(response1.status).toBe(201);
+
+        const response2 = await request(app)
+            .post('/register')
+            .send({
+                username: 'maRceLL_test',
+                email:'marcell_test2@test.com',
+                password: 'StrongPassword123!'
+            });
+        expect(response2.status).toBe(409)
+        expect(response2.body).toEqual({
+            message: 'username already in use'
+        });            
+        
+    });
 
     test.todo('rejects role in the request body with 400');
 
