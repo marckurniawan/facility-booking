@@ -1,14 +1,6 @@
 import request from 'supertest';
 import app from '../app.js';
 
-describe('App', () => {
-    test('returns 404 for an unknown path', async () => {
-        const response = await request(app)
-            .get('/this-path-does-not-exist');
-
-        expect(response.status).toBe(404);
-    });
-});
 
 describe('404 Handler', () => {
     test('should return 404 when route does not exist', async () => {
