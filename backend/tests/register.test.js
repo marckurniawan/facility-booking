@@ -105,7 +105,7 @@ describe('POST /register', () => {
             });
         expect(response2.status).toBe(409);
         expect(response2.body).toEqual({
-            message: 'email already in use'
+            message: 'Email already in use'
         });
             
         
@@ -130,12 +130,33 @@ describe('POST /register', () => {
             });
         expect(response2.status).toBe(409)
         expect(response2.body).toEqual({
-            message: 'username already in use'
+            message: 'Username already in use'
         });            
         
     });
 
-    test.todo('rejects role in the request body with 400');
+    test('rejects role in the request body with 400', async () => {
+        const response = await request(app)
+            .post('/register')
+            .send({
+                username: 'marcell_test',
+                email: 'marcell_test@test.com',
+                password: 'StrongPassword123!',
+                role: 'admin'
+            });
+
+        expect(response.status).toBe(400);
+        expect(response.body).toEqual({
+            message: 'Unexpected request field'
+        });
+
+        const result = await pool.query(
+            'SELECT id FROM users WHERE email = $1',
+            ['marcell_test@test.com']
+        );
+
+        expect(result.rows).toHaveLength(0);
+    });
 
     test.todo('rejects missing required fields with 400');
 

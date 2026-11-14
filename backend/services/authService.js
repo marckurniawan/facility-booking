@@ -25,11 +25,11 @@ export const register = async ({ username, email, password }) => {
         }
 
         if (err.constraint === EMAIL_UNIQUE_CONSTRAINT) {
-            throw new AppError(409, 'email already in use');
+            throw new AppError('Email already in use', 409);
         }
 
         if (err.constraint === USERNAME_UNIQUE_CONSTRAINT) {
-            throw new AppError(409, 'username already in use');
+            throw new AppError('Username already in use', 409);
         }
 
         throw err;
