@@ -158,8 +158,67 @@ describe('POST /register', () => {
         expect(result.rows).toHaveLength(0);
     });
 
-    test.todo('rejects missing required fields with 400');
+    test.each([
+        {
+            missing: 'username',
+            message: 'Username is required',
+            body: {
+                email: 'test@example.com',
+                password: 'Password123!',
+            },
+        },
+        {
+            missing: 'email',
+            message: 'Email is required',
+            body: {
+                username: 'testuser',
+                password: 'Password123!',
+            },
+        },
+        {
+            missing: 'password',
+            message: 'Password is required',
+            body: {
+                username: 'testuser',
+                email: 'test@example.com',
+            },
+        },
+    ])('should reject registration when $missing is missing', async ({ message, body }) => {
+        const response = await request(app)
+            .post('/register')
+            .send(body);
 
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe(message);
+        
+        const result = await pool.query('SELECT id FROM users');
+        expect(result.rows).toHaveLength(0);
+    });
+
+    test.each([
+        ['without body', undefined],
+        ['array body', []]
+    ])('rejects %s', async (description, body) => {
+        let req = request(app).post('/register');
+
+        if (body !== undefined) {
+            req = req.send(body);
+        }
+
+        const response = await req;
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe(
+            'Request body must be a JSON object'
+        );
+
+        const result = await pool.query(
+            'SELECT id FROM users'
+        );
+
+        expect(result.rows).toHaveLength(0);
+    });
+    
     test.todo('rejects fields with invalid types with 400');
 
     test.todo('rejects passwords shorter than the minimum length');
