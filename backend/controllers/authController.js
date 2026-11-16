@@ -1,6 +1,6 @@
 import { register } from '../services/authService.js';
 import { AppError } from '../utils/AppError.js';
-import { isMissing, validateEmail } from '../utils/validators.js';
+import { isMissing, validateEmail, validateString } from '../utils/validators.js';
 
 export const registerUser = async (req, res, next) => {
     try {
@@ -33,7 +33,21 @@ export const registerUser = async (req, res, next) => {
         if (isMissing(password)) {
             return next(new AppError('Password is required', 400));
         }
-        
+
+        const fields = [
+            [username, 'Username'],
+            [email, 'Email'],
+            [password, 'Password'],
+        ];
+
+        for (const [value, fieldName] of fields) {
+            const validation = validateString(value, fieldName);
+
+            if (!validation.valid) {
+                return next(new AppError(validation.message, 400));
+            }
+        }
+
         const emailValidation = validateEmail(email);
 
         if (!emailValidation.valid) {

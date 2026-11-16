@@ -7,9 +7,6 @@ export const isMissing = (value) => {
 };
 
 export const validateEmail = (email) => {
-if (typeof email !== 'string') {
-        return {valid: false,message: 'Email must be a string'};
-    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if(!emailRegex.test(email.trim())){
             return {valid: false, message: 'Invalid email format'};
@@ -17,4 +14,14 @@ if (typeof email !== 'string') {
     return {valid: true};
 }
 
+export const validateString = (value, fieldName) => {
+    if (typeof value !== 'string') {
+        return {
+            valid: false,
+            message: `${fieldName} must be a string`,
+        };
+    }
+
+    return { valid: true };
+};
 

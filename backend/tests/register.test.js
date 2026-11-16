@@ -219,7 +219,63 @@ describe('POST /register', () => {
         expect(result.rows).toHaveLength(0);
     });
     
-    test.todo('rejects fields with invalid types with 400');
+    test.each([
+        {
+            invalid: 'username',
+            message: 'Username must be a string',
+            body: {
+                username: 123,
+                email: 'test@example.com',
+                password: 'Password123!',
+            },
+        },
+        {
+            invalid: 'email',
+            message: 'Email must be a string',
+            body: {
+                username: 'testuser',
+                email: 123,
+                password: 'Password123!',
+            },
+        },
+        {
+            invalid: 'password',
+            message: 'Password must be a string',
+            body: {
+                username: 'testuser',
+                email: 'test@example.com',
+                password: 123,
+            },
+        },
+        {
+            invalid: 'username object',
+            message: 'Username must be a string',
+            body: {
+                username: { a: 1 },
+                email: 'test@example.com',
+                password: 'Password123!',
+            },
+        },
+        {
+            invalid: 'username array',
+            message: 'Username must be a string',
+            body: {
+                username: ['x'],
+                email: 'test@example.com',
+                password: 'Password123!',
+            },
+        },
+    ])('rejects fields with invalid $invalid with 400', async ({message, body}) => {
+        const response = await request(app)
+            .post('/register')
+            .send(body);
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe(message);
+        
+        const result = await pool.query('SELECT id FROM users');
+        expect(result.rows).toHaveLength(0);
+    });
 
     test.todo('rejects passwords shorter than the minimum length');
 
