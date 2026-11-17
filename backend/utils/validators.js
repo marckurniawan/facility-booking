@@ -25,3 +25,23 @@ export const validateString = (value, fieldName) => {
     return { valid: true };
 };
 
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_BYTES = 72;
+
+export const validatePassword = (password) => {
+    if ([...password].length < MIN_PASSWORD_LENGTH) {
+        return {
+            valid: false,
+            message: 'Password must be at least 8 characters',
+        };
+    }
+
+    if (Buffer.byteLength(password, 'utf8') > MAX_PASSWORD_BYTES) {
+        return {
+            valid: false,
+            message: 'Password must not exceed 72 bytes',
+        };
+    }
+
+    return { valid: true };
+};

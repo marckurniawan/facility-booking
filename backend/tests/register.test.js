@@ -277,9 +277,66 @@ describe('POST /register', () => {
         expect(result.rows).toHaveLength(0);
     });
 
-    test.todo('rejects passwords shorter than the minimum length');
+    
+    test.each([
+        {
+            boundary: 'one below minimum',
+            password: 'a'.repeat(7),
+            expectedStatus: 400,
+            expectedMessage: 'Password must be at least 8 characters',
+        },
+        {
+            boundary: 'minimum exactly',
+            password: 'a'.repeat(8),
+            expectedStatus: 201,
+        },
+        {
+            boundary: 'maximum exactly',
+            password: 'a'.repeat(72),
+            expectedStatus: 201,
+        },
+        {
+            boundary: 'one byte above maximum',
+            password: 'a'.repeat(73),
+            expectedStatus: 400,
+            expectedMessage: 'Password must not exceed 72 bytes',
+        },
+        {
+            boundary: 'emoji exceeding maximum bytes',
+            password: '😀'.repeat(19),
+            expectedStatus: 400,
+            expectedMessage: 'Password must not exceed 72 bytes',
+        },
+        {
+            boundary: 'four emoji below minimum',
+            password: '😀'.repeat(4),
+            expectedStatus: 400,
+            expectedMessage: 'Password must be at least 8 characters',
+        },
+    ])('validates password at $boundary', async ({
+        password,
+        expectedStatus,
+        expectedMessage,
+    }) => {
+        const response = await request(app)
+            .post('/register')
+            .send({
+                username: 'testuser',
+                email: 'test@example.com',
+                password,
+            });
 
-    test.todo('rejects passwords longer than 72 bytes');
+        expect(response.status).toBe(expectedStatus);
+
+        if (expectedStatus === 400) {
+            expect(response.body.message).toBe(expectedMessage);
+
+            const result = await pool.query('SELECT id FROM users');
+            expect(result.rows).toHaveLength(0);
+        }
+    });
+
+
 
     test.todo('allows only one of two concurrent registrations with the same email');
 

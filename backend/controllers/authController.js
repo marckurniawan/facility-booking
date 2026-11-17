@@ -1,6 +1,6 @@
 import { register } from '../services/authService.js';
 import { AppError } from '../utils/AppError.js';
-import { isMissing, validateEmail, validateString } from '../utils/validators.js';
+import { isMissing, validateEmail, validateString, validatePassword } from '../utils/validators.js';
 
 export const registerUser = async (req, res, next) => {
     try {
@@ -53,6 +53,13 @@ export const registerUser = async (req, res, next) => {
         if (!emailValidation.valid) {
             return next(new AppError(emailValidation.message, 400));
         }
+
+        const passwordValidation = validatePassword(password);
+
+        if (!passwordValidation.valid) {
+            return next(new AppError(passwordValidation.message, 400));
+        }
+
 
         const user = await register({
             username,
