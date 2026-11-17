@@ -2,6 +2,7 @@ import request from 'supertest';
 import app from '../app.js';
 import pool from '../db.js'; 
 import bcrypt from 'bcrypt';
+import { response } from 'express';
 
 
 beforeEach(async () => {
@@ -336,13 +337,35 @@ describe('POST /register', () => {
         }
     });
 
-
-
     test.todo('allows only one of two concurrent registrations with the same email');
 
-    test.todo(
-    'preserves username casing in the response while trimming and lowercasing email'
-    );  
+    test(
+    'preserves the original casing of the username',
+    async () => {
+        const response = await request(app)
+            .post('/register')
+            .send({
+                username: 'usnTeSt88',
+                email: 'EmailTESting@tesT.Com',
+                password: 'ValidPassword33!'
+        })
+        expect(response.status).toBe(201);
+
+        const createdUser = response.body;
+        
+        expect(createdUser.username).toBe('usnTeSt88')
+
+        const result = await pool.query(
+            'SELECT username FROM users WHERE id = $1', 
+            [createdUser.id]
+        )
+
+        expect(result.rows).toHaveLength(1);
+        expect(result.rows[0].username).toBe('usnTeSt88');
+    });  
+    
+
+
 });
 
 afterAll(async () => {
