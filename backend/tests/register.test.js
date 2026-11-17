@@ -2,7 +2,6 @@ import request from 'supertest';
 import app from '../app.js';
 import pool from '../db.js'; 
 import bcrypt from 'bcrypt';
-import { response } from 'express';
 
 
 beforeEach(async () => {
@@ -17,8 +16,8 @@ describe('POST /register', () => {
         const response = await request(app)
             .post('/register')
             .send({
-            username: 'marcell_test',
-            email: 'marcell_test@example.com',
+            username: 'username_test',
+            email: 'users_test@example.com',
             password: 'StrongPassword123!',
             });
 
@@ -26,8 +25,8 @@ describe('POST /register', () => {
 
         expect(response.body).toEqual({
             id: expect.any(Number),
-            username: 'marcell_test',
-            email: 'marcell_test@example.com',
+            username: 'username_test',
+            email: 'users_test@example.com',
             role: 'user',
         });
 
@@ -41,15 +40,15 @@ describe('POST /register', () => {
         await request(app)
             .post('/register')
             .send({
-                username: 'marcell_hash_test',
-                email: 'marcell_hash_test@example.com',
+                username: 'username_hash_test',
+                email: 'users_hash_test@example.com',
                 password,
             })
             .expect(201);
 
         const result = await pool.query(
             'SELECT password_hash FROM users WHERE email = $1',
-            ['marcell_hash_test@example.com']
+            ['users_hash_test@example.com']
         );
 
         expect(result.rows).toHaveLength(1);
@@ -68,19 +67,19 @@ describe('POST /register', () => {
     });
 
     test('trims and lowercases the email', async () => {
-        const email = ' marcell_teSt@test.com  ';
-        const expectedEmail = 'marcell_test@test.com';
+        const email = ' userS_teSt@test.com  ';
+        const expectedEmail = 'users_test@test.com';
         const response = await request(app)
             .post('/register')
             .send({
-                username: 'marcell_test',
+                username: 'username_test',
                 email,
                 password: 'StrongPassword123!'
             })
         expect(response.status).toBe(201);
 
         const result = await pool.query(`SELECT email FROM users 
-                                         WHERE username  = $1`, ['marcell_test']);
+                                         WHERE username  = $1`, ['username_test']);
         
         
         expect(result.rows).toHaveLength(1);
@@ -91,8 +90,8 @@ describe('POST /register', () => {
         const response1 = await request(app)
             .post('/register')
             .send({
-                username: 'marcell_test',
-                email:'marcell_test@test.com',
+                username: 'username_test',
+                email:'users_test@test.com',
                 password: 'StrongPassword123!'
             });
         expect(response1.status).toBe(201);
@@ -100,8 +99,8 @@ describe('POST /register', () => {
         const response2 = await request(app)
             .post('/register')
             .send({
-                username: 'marcell2_test',
-                email:'marcelL_Test@test.com',
+                username: 'username2_test',
+                email:'usErS_Test@test.com',
                 password: 'StrongPassword123!'
             });
         expect(response2.status).toBe(409);
@@ -116,8 +115,8 @@ describe('POST /register', () => {
         const response1 = await request(app)
             .post('/register')
             .send({
-                username: 'marcell_test',
-                email:'marcell_test@test.com',
+                username: 'username_test',
+                email:'users_test@test.com',
                 password: 'StrongPassword123!'
             });
         expect(response1.status).toBe(201);
@@ -125,8 +124,8 @@ describe('POST /register', () => {
         const response2 = await request(app)
             .post('/register')
             .send({
-                username: 'maRceLL_test',
-                email:'marcell_test2@test.com',
+                username: 'userNAME_test',
+                email:'users_test2@test.com',
                 password: 'StrongPassword123!'
             });
         expect(response2.status).toBe(409)
@@ -140,8 +139,8 @@ describe('POST /register', () => {
         const response = await request(app)
             .post('/register')
             .send({
-                username: 'marcell_test',
-                email: 'marcell_test@test.com',
+                username: 'username_test',
+                email: 'users_test@test.com',
                 password: 'StrongPassword123!',
                 role: 'admin'
             });
@@ -153,7 +152,7 @@ describe('POST /register', () => {
 
         const result = await pool.query(
             'SELECT id FROM users WHERE email = $1',
-            ['marcell_test@test.com']
+            ['users_test@test.com']
         );
 
         expect(result.rows).toHaveLength(0);
@@ -337,7 +336,46 @@ describe('POST /register', () => {
         }
     });
 
-    test.todo('allows only one of two concurrent registrations with the same email');
+    test('allows only one of two concurrent registrations with the same email', async () => {
+        const email = 'concurrent.test@example.com';
+
+        const responses = await Promise.all([
+            request(app)
+                .post('/register')
+                .send({
+                    username: 'usernameOne',
+                    email,
+                    password: 'ValidPassword123!',
+                }),
+
+            request(app)
+                .post('/register')
+                .send({
+                    username: 'usernameTwo',
+                    email,
+                    password: 'ValidPassword123!',
+                }),
+        ]);
+
+        const statuses = responses
+            .map(response => response.status)
+            .sort((a, b) => a - b);
+
+        expect(statuses).toEqual([201, 409]);
+
+        const conflictResponse = responses.find(
+            response => response.status === 409
+        );
+
+        expect(conflictResponse.body.message).toBe('Email already in use');
+
+        const result = await pool.query(
+            'SELECT COUNT(*)::int AS count FROM users WHERE email = $1',
+            [email]
+        );
+
+        expect(result.rows[0].count).toBe(1);
+    });
 
     test(
     'preserves the original casing of the username',
