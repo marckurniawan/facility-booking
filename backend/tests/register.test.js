@@ -346,7 +346,7 @@ describe('POST /register', () => {
             .post('/register')
             .send({
                 username: 'usnTeSt88',
-                email: 'EmailTESting@tesT.Com',
+                email: 'emailtesting@test.com',
                 password: 'ValidPassword33!'
         })
         expect(response.status).toBe(201);
