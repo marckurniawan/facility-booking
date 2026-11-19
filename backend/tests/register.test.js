@@ -2,12 +2,17 @@ import request from 'supertest';
 import app from '../app.js';
 import pool from '../db.js'; 
 import bcrypt from 'bcrypt';
+import { jest } from '@jest/globals';
 
 
 beforeEach(async () => {
     await pool.query(
         'TRUNCATE users, facilities, bookings RESTART IDENTITY CASCADE'
     );
+});
+
+afterEach(() => {
+    jest.restoreAllMocks();
 });
 
 describe('POST /register', () => {
@@ -491,7 +496,7 @@ describe('POST /register', () => {
             [email]
         );
 
-        expect(result.rows).toHaveLength(1);
+        expect(result.rows[0].count).toBe(1);
     });
 
     test(
@@ -519,7 +524,44 @@ describe('POST /register', () => {
         expect(result.rows[0].username).toBe('usnTeSt88');
     });  
     
+    test('rejects a malformed JSON body with 400', async () => {
+        const response = await request(app)
+            .post('/register')
+            .set('Content-Type', 'application/json')
+            .send('{bad json');
+        
+        expect(response.status).toBe(400);
+        expect(response.headers['content-type']).toEqual(
+            expect.stringContaining('json')
+        );
 
+        expect(response.body).toEqual({
+            message: 'Invalid JSON body'
+        });
+        
+        const result = await pool.query('SELECT id FROM users');
+
+        expect(result.rows).toHaveLength(0);
+    });
+
+    test('should return 500 when an unexpected error occurs', async () => {
+        jest.spyOn(pool, 'query')
+            .mockRejectedValueOnce(new Error('boom'));
+
+        const response = await request(app)
+            .post('/register')
+            .send({
+                username: 'usnt3st',
+                email: 'test@example.com',
+                password: 'password123'
+            });
+
+        expect(response.status).toBe(500);
+
+        expect(response.body).toEqual({
+            message: 'Internal server error'
+        });
+    });
 
 });
 
