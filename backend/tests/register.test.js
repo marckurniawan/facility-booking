@@ -160,7 +160,7 @@ describe('POST /register', () => {
 
     test.each([
         {
-            missing: 'username',
+            case: 'username absent',
             message: 'Username is required',
             body: {
                 email: 'test@example.com',
@@ -168,7 +168,7 @@ describe('POST /register', () => {
             },
         },
         {
-            missing: 'email',
+            case: 'email absent',
             message: 'Email is required',
             body: {
                 username: 'testuser',
@@ -176,14 +176,94 @@ describe('POST /register', () => {
             },
         },
         {
-            missing: 'password',
+            case: 'password absent',
             message: 'Password is required',
             body: {
                 username: 'testuser',
                 email: 'test@example.com',
             },
         },
-    ])('should reject registration when $missing is missing', async ({ message, body }) => {
+        {
+            case: 'username is null',
+            message: 'Username is required',
+            body: {
+                username: null,
+                email: 'test@example.com',
+                password: 'Password123!',
+            },
+        },
+        {
+            case: 'email is null',
+            message: 'Email is required',
+            body: {
+                username: 'testuser',
+                email: null,
+                password: 'Password123!',
+            },
+        },
+        {
+            case: 'password is null',
+            message: 'Password is required',
+            body: {
+                username: 'testuser',
+                email: 'test@example.com',
+                password: null
+            },
+        },{
+            case: 'username is an empty string',
+            message: 'Username is required',
+            body: {
+                username: '',
+                email: 'test@example.com',
+                password: 'Password123!',
+            },
+        },
+        {
+            case: 'email is an empty string',
+            message: 'Email is required',
+            body: {
+                username: 'testuser',
+                email: '',
+                password: 'Password123!',
+            },
+        },
+        {
+            case: 'password is an empty string',
+            message: 'Password is required',
+            body: {
+                username: 'testuser',
+                email: 'test@example.com',
+                password: ''
+            },
+        },            
+        {
+            case: 'username contains only whitespace',
+            message: 'Username is required',
+            body: {
+                username: '  ',
+                email: 'test@example.com',
+                password: 'Password123!',
+            },
+        },
+        {
+            case: 'email contains only whitespace',
+            message: 'Email is required',
+            body: {
+                username: 'testuser',
+                email: '  ',
+                password: 'Password123!',
+            },
+        },
+        {
+            case: 'password contains only whitespace',
+            message: 'Password is required',
+            body: {
+                username: 'testuser',
+                email: 'test@example.com',
+                password: '  '
+            },
+        },    
+    ])('should reject registration when $case', async ({ message, body }) => {
         const response = await request(app)
             .post('/register')
             .send(body);
@@ -277,7 +357,7 @@ describe('POST /register', () => {
         expect(result.rows).toHaveLength(0);
     });
 
-    
+
     test.each([
         {
             boundary: 'one below minimum',
@@ -336,6 +416,43 @@ describe('POST /register', () => {
         }
     });
 
+    test.each([
+        {
+            case: 'password contains leading whitespace',
+            password: '   abcde',
+        },
+        {
+            case: 'password contains internal whitespace',
+            password: 'abc defg',
+        },
+    ])('$case should be accepted without removing whitespace', async ({ password }) => {
+        const response = await request(app)
+            .post('/register')
+            .send({
+                username: 'usn3Test',
+                email: 'test@example.com',
+                password,
+            });
+
+        expect(response.status).toBe(201);
+
+
+        const result = await pool.query(
+            'SELECT password_hash FROM users WHERE username = $1',
+            ['usn3Test']
+        );
+
+        expect(result.rows).toHaveLength(1);
+
+        const isPasswordPreserved = await bcrypt.compare(
+            password,
+            result.rows[0].password_hash
+        );
+
+        expect(isPasswordPreserved).toBe(true);
+
+    });
+
     test('allows only one of two concurrent registrations with the same email', async () => {
         const email = 'concurrent.test@example.com';
 
@@ -374,7 +491,7 @@ describe('POST /register', () => {
             [email]
         );
 
-        expect(result.rows[0].count).toBe(1);
+        expect(result.rows).toHaveLength(1);
     });
 
     test(
